@@ -1,0 +1,8 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v3.2.4
+    command: start --user root --pass root rocksdb:/data/discord.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
