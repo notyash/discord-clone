@@ -1,9 +1,17 @@
 -- db/schema/001_tables.surql
 
-DEFINE TABLE user SCHEMAFULL;
+DEFINE TABLE user SCHEMAFULL
+    PERMISSIONS
+        FOR select WHERE $auth != NONE
+        FOR create NONE
+        FOR update WHERE id = $auth
+        FOR delete WHERE id = $auth; 
 DEFINE FIELD username ON user TYPE string ASSERT string::len($value) > 0;
 DEFINE FIELD email ON user TYPE string ASSERT string::is_email($value);
-DEFINE FIELD pass ON user TYPE string;
+DEFINE FIELD pass ON user TYPE string
+    PERMISSIONS
+        FOR select NONE
+        FOR update WHERE id = $auth;
 DEFINE FIELD created_at ON user TYPE datetime DEFAULT time::now();
 DEFINE INDEX unique_email ON user COLUMNS email UNIQUE;
 
