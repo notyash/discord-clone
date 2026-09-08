@@ -66,3 +66,30 @@ This document records the architectural, data-modeling, and schema design decisi
   * *Cons*: Database engine directly manages password verification and token generation.
 * **Rationale**:
   Exercises native SurrealDB authentication pipelines, cryptographic primitives, and `$auth` session state binding.
+
+---
+
+## ADR 006: Field-Level Masking for Sensitive Columns
+
+* **Decision**: Use field-level permissions (`DEFINE FIELD pass ON user TYPE string PERMISSIONS FOR select NONE`) to strip password hashes at the engine level.
+* **Context**:
+  In a pure BaaS architecture without an intermediate API server to sanitize DTOs, clients query the database directly.
+* **Trade-offs**:
+  * *Pros*: Engine guarantees that password hashes are physically stripped from the serialization pipeline on `SELECT * FROM user`.
+  * *Cons*: Requires understanding the distinction between table-level (row) and field-level (column) permissions.
+* **Rationale**:
+  Provides declarative, zero-leak security natively inside the storage engine.
+
+---
+
+## ADR 007: Composite Unique Indexing for User-Scoped Entities
+
+* **Decision**: Define composite unique indexes on scoped child tables (e.g. `DEFINE INDEX unique_device ON trusted_device FIELDS user, device_id UNIQUE;`).
+* **Context**:
+  Devices and user-specific resources need uniqueness scoped per user, rather than globally across the database.
+* **Trade-offs**:
+  * *Pros*: RocksDB encodes the composite compound key `[user_id, device_id]` preventing duplicate registrations for the same user while permitting identical device names across different users.
+  * *Cons*: Requires composite index maintenance in the storage layer on mutations.
+* **Rationale**:
+  Guarantees entity integrity and prevents state pollution at the lowest storage layer.
+
