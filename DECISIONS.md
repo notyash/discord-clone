@@ -93,3 +93,31 @@ This document records the architectural, data-modeling, and schema design decisi
 * **Rationale**:
   Guarantees entity integrity and prevents state pollution at the lowest storage layer.
 
+---
+
+## ADR 008: Channel Lifecycle Permissions
+
+* **Decision**: Restrict `channel` table permissions to read-only for regular users (`FOR select WHERE $auth != NONE; FOR create NONE; FOR update NONE; FOR delete NONE;`).
+* **Context**:
+  In a Discord architecture, channel creation, mutation, and deletion must be restricted to administrators or automated setup routines.
+* **Trade-offs**:
+  * *Pros*: Prevents unauthorized channel spam and accidental channel deletion by authenticated users.
+  * *Cons*: Requires administrative queries or custom functions with elevated permissions for server admins to manage channels.
+* **Rationale**:
+  Enforces strict authorization boundaries directly in the database engine.
+
+---
+
+## ADR 009: Composite Edge Uniqueness on Graph Relations
+
+* **Decision**: Define a composite unique index on the `in` and `out` pointers of relation tables (`DEFINE INDEX unique_membership ON member_of FIELDS in, out UNIQUE;`).
+* **Context**:
+  SurrealDB operates as a multigraph allowing parallel edges by default. Repeated `RELATE` operations created duplicate membership edges, causing duplicated results during graph traversal queries.
+* **Trade-offs**:
+  * *Pros*: Enforces single membership semantics at the storage engine level without application-level deduplication code.
+  * *Cons*: Requires composite index maintenance on edge creation and deletion.
+* **Rationale**:
+  Prevents relationship duplication at the lowest storage layer and ensures graph traversals return unique entities.
+
+
+
