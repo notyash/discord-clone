@@ -1,7 +1,21 @@
+# Database storage & environment
 /data/
 .env
+.env.*
+!.env.example
+
+# Dependencies & Build artifacts
 node_modules/
 dist/
+dist-electron/
+dist-ssr/
+
+# OS & Logs
 .DS_Store
 Thumbs.db
-*.md
+*.log
+
+# Personal Handwritten Notes
+DECISIONS.md
+DEFERRED.md
+HANDWRITTEN_NOTES.md

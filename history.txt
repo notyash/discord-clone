@@ -1,4 +1,0 @@
-#V2
--- db/schema/001_tables.surql
-DEFINE TABLE user SCHEMAFULL
-    PERMISSIONS
