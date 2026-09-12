@@ -1,6 +1,4 @@
--- Define record-level authentication for users
-
-DEFINE ACCESS account ON DATABASE TYPE RECORD
+DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
     SIGNUP (
         CREATE user SET
             username = $username,
@@ -12,4 +10,4 @@ DEFINE ACCESS account ON DATABASE TYPE RECORD
         WHERE email = $email
         AND crypto::argon2::compare(pass, $pass)
     )
-    DURATION FOR TOKEN 15m, FOR SESSION 12h;
+    DURATION FOR TOKEN 30d, FOR SESSION 30d;
