@@ -10,4 +10,4 @@ DEFINE ACCESS OVERWRITE account ON DATABASE TYPE RECORD
         WHERE email = $email
         AND crypto::argon2::compare(pass, $pass)
     )
-    DURATION FOR TOKEN 30d, FOR SESSION 30d;
+    DURATION FOR TOKEN 7d, FOR SESSION 7d;
