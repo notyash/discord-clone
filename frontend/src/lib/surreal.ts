@@ -12,19 +12,32 @@ export const DB_CONFIG = {
   access: 'account',
 };
 
-// Initialize the WebSocket connection
+// In-flight connection promise to prevent concurrent race conditions (e.g. React StrictMode)
+let connectingPromise: Promise<void> | null = null;
+
+// Initialize the WebSocket connection safely
 export async function initSurreal(): Promise<void> {
   if (surreal.status === 'connected') return;
+  if (connectingPromise) return connectingPromise;
 
-  try {
-    await surreal.connect(DB_CONFIG.endpoint);
-    await surreal.use({
-      namespace: DB_CONFIG.namespace,
-      database: DB_CONFIG.database,
-    });
-    console.log(' [SurrealDB] Connected to WebSocket at', DB_CONFIG.endpoint);
-  } catch (err) {
-    console.error(' [SurrealDB] Connection failed:', err);
-    throw err;
-  }
+  connectingPromise = (async () => {
+    try {
+      if (surreal.status === 'disconnected') {
+        await surreal.connect(DB_CONFIG.endpoint);
+      }
+      await surreal.ready;
+      await surreal.use({
+        namespace: DB_CONFIG.namespace,
+        database: DB_CONFIG.database,
+      });
+      console.log(' [SurrealDB] Connected to WebSocket at', DB_CONFIG.endpoint);
+    } catch (err) {
+      console.error(' [SurrealDB] Connection failed:', err);
+      throw err;
+    } finally {
+      connectingPromise = null;
+    }
+  })();
+
+  return connectingPromise;
 }
