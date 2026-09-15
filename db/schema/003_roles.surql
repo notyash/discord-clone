@@ -1,4 +1,4 @@
-﻿-- db/schema/003_roles.surql
+-- db/schema/003_roles.surql
 
 -- ==============================================================================
 -- 1. AUTHORIZATION & PERMISSION FUNCTIONS
@@ -6,9 +6,14 @@
 
 DEFINE FUNCTION OVERWRITE fn::has_permission(
     $user: record<user>, 
-    $server: record<server>, 
+    $server: option<record<server>>, 
     $perm: string
 ) -> bool {
+    -- Guard: If server pointer is missing or unassigned
+    IF !$server {
+        RETURN false;
+    };
+
     -- Owner always has full bypass
     IF $server.owner = $user {
         RETURN true;
@@ -28,17 +33,18 @@ DEFINE FUNCTION OVERWRITE fn::has_permission(
     RETURN $is_admin OR $has_flag;
 };
 
-DEFINE FUNCTION OVERWRITE fn::can_manage_channels($user: record<user>, $server: record<server>) -> bool {
+DEFINE FUNCTION OVERWRITE fn::can_manage_channels($user: record<user>, $server: option<record<server>>) -> bool {
     RETURN fn::has_permission($user, $server, "manage_channels");
 };
 
-DEFINE FUNCTION OVERWRITE fn::can_manage_roles($user: record<user>, $server: record<server>) -> bool {
+DEFINE FUNCTION OVERWRITE fn::can_manage_roles($user: record<user>, $server: option<record<server>>) -> bool {
     RETURN fn::has_permission($user, $server, "manage_roles");
 };
 
-DEFINE FUNCTION OVERWRITE fn::can_kick_members($user: record<user>, $server: record<server>) -> bool {
+DEFINE FUNCTION OVERWRITE fn::can_kick_members($user: record<user>, $server: option<record<server>>) -> bool {
     RETURN fn::has_permission($user, $server, "kick_members");
 };
+
 
 -- ==============================================================================
 -- 2. ROLE TABLE
@@ -52,7 +58,7 @@ DEFINE TABLE OVERWRITE role SCHEMAFULL
 
 DEFINE FIELD OVERWRITE server ON role TYPE record<server>;
 DEFINE FIELD OVERWRITE name ON role TYPE string ASSERT string::len($value) > 0;
-DEFINE FIELD OVERWRITE color ON role TYPE option<string>;
+DEFINE FIELD OVERWRITE color ON role TYPE option<string | null>;
 DEFINE FIELD OVERWRITE position ON role TYPE number DEFAULT 0;
 
 -- Granular permissions object

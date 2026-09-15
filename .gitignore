@@ -15,7 +15,9 @@ dist-ssr/
 Thumbs.db
 *.log
 
-# Personal Handwritten Notes
+# Personal Handwritten Notes & Custom Features
 DECISIONS.md
 DEFERRED.md
 HANDWRITTEN_NOTES.md
+CUSTOM_IDEAS.md
+FDE_TAKEAWAYS.md

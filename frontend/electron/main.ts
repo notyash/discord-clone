@@ -15,7 +15,11 @@ function createWindow() {
       nodeIntegration: false, // Security best practice: keep renderer isolated
       contextIsolation: true,
     },
+    fullscreen: true
   })
+
+  // Automatically maximize window on launch
+  win.maximize()
 
   // In development, load the Vite local dev server URL
   if (process.env.VITE_DEV_SERVER_URL) {

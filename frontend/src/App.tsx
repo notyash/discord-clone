@@ -1,12 +1,15 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAuthStore } from './stores/authStore';
 import { useServerStore } from './stores/serverStore';
+import { useChannelStore } from './stores/channelStore';
 import { AuthScreen } from './components/AuthScreen';
 import { ServerRail } from './components/ServerRail';
+import { ChannelSidebar } from './components/ChannelSidebar';
 
 function App() {
-  const { user, loading, initialize, signout } = useAuthStore();
+  const { user, loading, initialize } = useAuthStore();
   const { fetchServers, activeServer } = useServerStore();
+  const { activeChannel } = useChannelStore();
 
   useEffect(() => {
     initialize();
@@ -35,33 +38,45 @@ function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#313338] text-white select-none">
-      {/* 1. Leftmost Server Rail */}
+      {/* 1. Column 1: Leftmost Server Rail (72px) */}
       <ServerRail />
 
-      {/* 2. Main Content Area placeholder before adding ChannelSidebar & ChatArea */}
-      <div className="flex flex-1 flex-col items-center justify-center space-y-4 bg-[#313338] text-[#dbdee1]">
-        {activeServer ? (
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-white">Active Server: {activeServer.name}</h2>
-            <p className="text-sm text-[#949ba4]">Server ID: {activeServer.id}</p>
-          </div>
-        ) : (
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-white">Direct Messages / Home</h2>
-            <p className="text-sm text-[#949ba4]">Select a server on the left rail or click + to create one.</p>
-          </div>
-        )}
+      {/* 2. Column 2: Channel Sidebar (240px) */}
+      {activeServer && <ChannelSidebar />}
 
-        <div className="pt-4 border-t border-[#35363c] text-center space-y-3">
-          <p className="text-sm text-[#949ba4]">
-            Logged in as <strong className="text-white">{user.username}</strong> ({user.email})
-          </p>
-          <button
-            onClick={() => signout()}
-            className="rounded bg-[#da373c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#a1282c] transition"
-          >
-            Sign Out
-          </button>
+      {/* 3. Column 3: Main Chat Area Placeholder (flex-1) */}
+      <div className="flex flex-1 flex-col bg-[#313338] text-[#dbdee1]">
+        {/* Active Channel Header */}
+        <header className="flex h-12 w-full items-center border-b border-[#1f2023] px-4 font-semibold text-white shadow-sm">
+          {activeChannel ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[#80848e] text-lg font-bold">#</span>
+              <span className="text-sm font-bold text-white">{activeChannel.name}</span>
+            </div>
+          ) : (
+            <span className="text-sm text-[#949ba4]">No channel selected</span>
+          )}
+        </header>
+
+        {/* Chat Message Viewport Placeholder */}
+        <div className="flex flex-1 flex-col items-center justify-center space-y-3 p-6 text-center">
+          {activeChannel ? (
+            <div className="space-y-2">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#35373c] text-3xl font-bold text-white">
+                #
+              </div>
+              <h2 className="text-2xl font-bold text-white">Welcome to #{activeChannel.name}!</h2>
+              <p className="text-sm text-[#949ba4]">
+                This is the start of the #{activeChannel.name} channel.
+              </p>
+              <p className="text-xs text-[#80848e]">Channel ID: {activeChannel.id}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-white">Select a channel</h2>
+              <p className="text-sm text-[#949ba4]">Right-click on the sidebar or click + to create a channel.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

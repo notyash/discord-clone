@@ -43,13 +43,25 @@ DEFINE TABLE OVERWRITE server SCHEMAFULL
         FOR delete WHERE owner = $auth;
 
 DEFINE FIELD OVERWRITE name ON server TYPE string ASSERT string::len($value) > 0;
-DEFINE FIELD OVERWRITE icon ON server TYPE option<string>;
+DEFINE FIELD OVERWRITE icon ON server TYPE option<string | null>;
 DEFINE FIELD OVERWRITE owner ON server TYPE record<user> DEFAULT $auth;
 DEFINE FIELD OVERWRITE created_at ON server TYPE datetime DEFAULT time::now();
 
 -- ==============================================================================
--- 3. CHANNEL & MESSAGE TABLES
+-- 3. CATEGORY, CHANNEL & MESSAGE TABLES
 -- ==============================================================================
+DEFINE TABLE OVERWRITE category SCHEMAFULL
+    PERMISSIONS
+        FOR select WHERE server IN $auth->member_of->server
+        FOR create WHERE fn::can_manage_channels($auth, server)
+        FOR update WHERE fn::can_manage_channels($auth, server)
+        FOR delete WHERE fn::can_manage_channels($auth, server);
+
+DEFINE FIELD OVERWRITE server ON category TYPE record<server>;
+DEFINE FIELD OVERWRITE name ON category TYPE string ASSERT string::len($value) > 0;
+DEFINE FIELD OVERWRITE position ON category TYPE number DEFAULT 0;
+DEFINE FIELD OVERWRITE created_at ON category TYPE datetime DEFAULT time::now();
+
 DEFINE TABLE OVERWRITE channel SCHEMAFULL
     PERMISSIONS
         FOR select WHERE server IN $auth->member_of->server
@@ -58,10 +70,10 @@ DEFINE TABLE OVERWRITE channel SCHEMAFULL
         FOR delete WHERE fn::can_manage_channels($auth, server);
 
 DEFINE FIELD OVERWRITE server ON channel TYPE record<server>;
+DEFINE FIELD OVERWRITE category ON channel TYPE option<record<category> | null>;
 DEFINE FIELD OVERWRITE name ON channel TYPE string ASSERT string::len($value) > 0;
 DEFINE FIELD OVERWRITE position ON channel TYPE number DEFAULT 0;
 DEFINE FIELD OVERWRITE created_at ON channel TYPE datetime DEFAULT time::now();
-DEFINE INDEX OVERWRITE unique_channel_per_server ON channel FIELDS server, name UNIQUE;
 
 DEFINE TABLE OVERWRITE message SCHEMAFULL
     PERMISSIONS
@@ -87,5 +99,5 @@ DEFINE TABLE OVERWRITE member_of TYPE RELATION FROM user TO server SCHEMAFULL
                       OR fn::can_kick_members($auth, out);
 
 DEFINE FIELD OVERWRITE joined_at ON member_of TYPE datetime DEFAULT time::now();
-DEFINE FIELD OVERWRITE nickname ON member_of TYPE option<string>;
+DEFINE FIELD OVERWRITE nickname ON member_of TYPE option<string | null>;
 DEFINE INDEX OVERWRITE unique_membership ON member_of FIELDS in, out UNIQUE;
