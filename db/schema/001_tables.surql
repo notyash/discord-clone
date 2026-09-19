@@ -16,7 +16,9 @@ DEFINE FIELD OVERWRITE pass ON user TYPE string
     PERMISSIONS
         FOR select NONE
         FOR update WHERE id = $auth;
-DEFINE FIELD OVERWRITE created_at ON user TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE created_at ON user TYPE datetime VALUE $before.created_at OR time::now()
+    PERMISSIONS
+        FOR update NONE;
 DEFINE INDEX OVERWRITE unique_email ON user FIELDS email UNIQUE;
 
 DEFINE TABLE OVERWRITE trusted_device SCHEMAFULL
@@ -26,10 +28,10 @@ DEFINE TABLE OVERWRITE trusted_device SCHEMAFULL
         FOR update WHERE user = $auth
         FOR delete WHERE user = $auth;
 
-DEFINE FIELD OVERWRITE user ON trusted_device TYPE record<user> DEFAULT $auth;
+DEFINE FIELD OVERWRITE user ON trusted_device TYPE record<user> DEFAULT $auth ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE device_id ON trusted_device TYPE string;
 DEFINE FIELD OVERWRITE trusted ON trusted_device TYPE bool DEFAULT true;
-DEFINE FIELD OVERWRITE last_seen ON trusted_device TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE last_seen ON trusted_device TYPE datetime VALUE time::now();
 DEFINE INDEX OVERWRITE unique_device ON trusted_device FIELDS user, device_id UNIQUE;
 
 -- ==============================================================================
@@ -44,8 +46,8 @@ DEFINE TABLE OVERWRITE server SCHEMAFULL
 
 DEFINE FIELD OVERWRITE name ON server TYPE string ASSERT string::len($value) > 0;
 DEFINE FIELD OVERWRITE icon ON server TYPE option<string | null>;
-DEFINE FIELD OVERWRITE owner ON server TYPE record<user> DEFAULT $auth;
-DEFINE FIELD OVERWRITE created_at ON server TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE owner ON server TYPE record<user> DEFAULT $auth ASSERT record::exists($value);
+DEFINE FIELD OVERWRITE created_at ON server TYPE datetime VALUE $before.created_at OR time::now();
 
 -- ==============================================================================
 -- 3. CATEGORY, CHANNEL & MESSAGE TABLES
@@ -57,10 +59,10 @@ DEFINE TABLE OVERWRITE category SCHEMAFULL
         FOR update WHERE fn::can_manage_channels($auth, server)
         FOR delete WHERE fn::can_manage_channels($auth, server);
 
-DEFINE FIELD OVERWRITE server ON category TYPE record<server>;
+DEFINE FIELD OVERWRITE server ON category TYPE record<server> ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE name ON category TYPE string ASSERT string::len($value) > 0;
 DEFINE FIELD OVERWRITE position ON category TYPE number DEFAULT 0;
-DEFINE FIELD OVERWRITE created_at ON category TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE created_at ON category TYPE datetime VALUE $before.created_at OR time::now();
 
 DEFINE TABLE OVERWRITE channel SCHEMAFULL
     PERMISSIONS
@@ -69,11 +71,11 @@ DEFINE TABLE OVERWRITE channel SCHEMAFULL
         FOR update WHERE fn::can_manage_channels($auth, server)
         FOR delete WHERE fn::can_manage_channels($auth, server);
 
-DEFINE FIELD OVERWRITE server ON channel TYPE record<server>;
-DEFINE FIELD OVERWRITE category ON channel TYPE option<record<category> | null>;
+DEFINE FIELD OVERWRITE server ON channel TYPE record<server> ASSERT record::exists($value);
+DEFINE FIELD OVERWRITE category ON channel TYPE option<record<category> | null> ASSERT $value == NONE OR $value == NULL OR record::exists($value);
 DEFINE FIELD OVERWRITE name ON channel TYPE string ASSERT string::len($value) > 0;
 DEFINE FIELD OVERWRITE position ON channel TYPE number DEFAULT 0;
-DEFINE FIELD OVERWRITE created_at ON channel TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE created_at ON channel TYPE datetime VALUE $before.created_at OR time::now();
 
 DEFINE TABLE OVERWRITE message SCHEMAFULL
     PERMISSIONS
@@ -82,10 +84,10 @@ DEFINE TABLE OVERWRITE message SCHEMAFULL
         FOR update WHERE user = $auth
         FOR delete WHERE user = $auth OR fn::has_permission($auth, channel.server, "manage_messages");
 
-DEFINE FIELD OVERWRITE channel ON message TYPE record<channel>;
-DEFINE FIELD OVERWRITE user ON message TYPE record<user> DEFAULT $auth;
+DEFINE FIELD OVERWRITE channel ON message TYPE record<channel> ASSERT record::exists($value);
+DEFINE FIELD OVERWRITE user ON message TYPE record<user> DEFAULT $auth ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE content ON message TYPE string ASSERT string::len($value) > 0;
-DEFINE FIELD OVERWRITE created_at ON message TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE created_at ON message TYPE datetime VALUE $before.created_at OR time::now();
 
 -- ==============================================================================
 -- 4. RELATION TABLES (GRAPH EDGES)
@@ -98,6 +100,6 @@ DEFINE TABLE OVERWRITE member_of TYPE RELATION FROM user TO server SCHEMAFULL
                       OR out.owner = $auth 
                       OR fn::can_kick_members($auth, out);
 
-DEFINE FIELD OVERWRITE joined_at ON member_of TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE joined_at ON member_of TYPE datetime VALUE $before.joined_at OR time::now();
 DEFINE FIELD OVERWRITE nickname ON member_of TYPE option<string | null>;
 DEFINE INDEX OVERWRITE unique_membership ON member_of FIELDS in, out UNIQUE;

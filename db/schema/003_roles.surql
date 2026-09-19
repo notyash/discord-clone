@@ -56,7 +56,7 @@ DEFINE TABLE OVERWRITE role SCHEMAFULL
         FOR update WHERE fn::can_manage_roles($auth, server)
         FOR delete WHERE fn::can_manage_roles($auth, server);
 
-DEFINE FIELD OVERWRITE server ON role TYPE record<server>;
+DEFINE FIELD OVERWRITE server ON role TYPE record<server> ASSERT record::exists($value);
 DEFINE FIELD OVERWRITE name ON role TYPE string ASSERT string::len($value) > 0;
 DEFINE FIELD OVERWRITE color ON role TYPE option<string | null>;
 DEFINE FIELD OVERWRITE position ON role TYPE number DEFAULT 0;
@@ -69,7 +69,7 @@ DEFINE FIELD OVERWRITE permissions.manage_roles ON role TYPE bool DEFAULT false;
 DEFINE FIELD OVERWRITE permissions.kick_members ON role TYPE bool DEFAULT false;
 DEFINE FIELD OVERWRITE permissions.ban_members ON role TYPE bool DEFAULT false;
 DEFINE FIELD OVERWRITE permissions.manage_messages ON role TYPE bool DEFAULT false;
-DEFINE FIELD OVERWRITE created_at ON role TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE created_at ON role TYPE datetime VALUE $before.created_at OR time::now();
 
 DEFINE INDEX OVERWRITE unique_role_per_server ON role FIELDS server, name UNIQUE;
 
@@ -82,5 +82,5 @@ DEFINE TABLE OVERWRITE has_role TYPE RELATION FROM user TO role SCHEMAFULL
         FOR create WHERE fn::can_manage_roles($auth, out.server)
         FOR delete WHERE fn::can_manage_roles($auth, out.server);
 
-DEFINE FIELD OVERWRITE assigned_at ON has_role TYPE datetime DEFAULT time::now();
+DEFINE FIELD OVERWRITE assigned_at ON has_role TYPE datetime VALUE $before.assigned_at OR time::now();
 DEFINE INDEX OVERWRITE unique_user_role ON has_role FIELDS in, out UNIQUE;
